@@ -11,31 +11,38 @@ headless = ["headless_chrome"]
 
 [dependencies]
 anyhow = "1.0"
-clap = { version = "4.5", features = ["derive"] }
+clap = { version = "4.5", features = ["derive", "env"] }
 # Use a multi-threaded async runtime
-tokio = { version = "1.40", features = ["rt-multi-thread", "macros", "signal"] }
+tokio = { version = "1.40", features = ["rt-multi-thread", "macros", "signal", "fs", "time"] }
+# Futures utilities
+futures = "0.3"
 # HTTP client with Rustls TLS and compression
 reqwest = { version = "0.12", features = ["rustls-tls", "gzip", "brotli", "json", "http2"] }
 # HTML parsing and utilities
 scraper = "0.19"
 regex = "1.10"
 url = "2.5"
-publicsuffix = "1.5"
+publicsuffix = { version = "1.5" }
 # Email normalization/validation
-email-address = "0.2"
+email_address = "0.2"
 # CSV output and serialization
 csv = "1.3"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 # Caching and paths
 sha2 = "0.10"
+hex = "0.4"
 directories = "5.0"
 # Logging
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 # Google Sheets API + OAuth
-# Using google-sheets4 (from google-apis-rs) and yup-oauth2 for installed-app OAuth
+# Using google-sheets4 (from google-apis-rs) which re-exports oauth2 types
 google-sheets4 = "5"
-yup-oauth2 = "8"
+# Underlying HTTP for Google APIs
+hyper = { version = "0.14", features = ["http1", "http2", "client"] }
+hyper-rustls = { version = "0.24", features = ["http1", "http2"] }
+# Interactive prompts
+dialoguer = "0.11"
 # Optional headless browser (requires Chrome installed)
 headless_chrome = { version = "0.9", optional = true }
