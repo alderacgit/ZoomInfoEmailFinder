@@ -21,9 +21,13 @@ pub struct Args {
     pub output: PathBuf,
 
 
-    /// Max concurrent HTTP requests
+    /// Max concurrent HTTP requests (per site)
     #[arg(long, default_value_t = 4)]
     pub concurrency: usize,
+
+    /// Max concurrent rows processed in parallel
+    #[arg(long, default_value_t = 4)]
+    pub row_concurrency: usize,
 
     /// Max pages to crawl per website
     #[arg(long, default_value_t = 50)]

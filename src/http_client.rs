@@ -23,6 +23,8 @@ impl HttpClient {
             .redirect(reqwest::redirect::Policy::limited(10))
             .brotli(true)
             .gzip(true)
+            .connect_timeout(Duration::from_secs(3))
+            .timeout(Duration::from_secs(5))
             .user_agent("ZoomInfoEmailFinder/0.1")
             .build()?;
         Ok(Self {

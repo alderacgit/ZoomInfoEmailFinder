@@ -8,6 +8,7 @@ use url::Url;
 use crate::http_client::HttpClient;
 use crate::email_extractor::{extract_emails_from_html, normalize_email};
 
+#[derive(Clone)]
 pub struct CrawlConfig {
     pub max_pages: usize,
     pub max_depth: usize,

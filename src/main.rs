@@ -5,6 +5,7 @@ use std::sync::Arc;
 use tracing_subscriber::{fmt, EnvFilter};
 use url::Url;
 use indicatif::{ProgressBar, ProgressStyle};
+use futures::stream::{self, StreamExt};
 
 mod cli;
 mod crawler;
@@ -42,10 +43,6 @@ async fn main() -> Result<()> {
 
     let cfg = CrawlConfig::new(args.max_pages, args.max_depth);
 
-    // CSV writer
-    let mut wtr = csv::Writer::from_path(&args.output)?;
-    wtr.write_record(["Unique_ID", "Email"]).ok();
-
     // Progress bar for overall row processing
     let pb = ProgressBar::new(total as u64);
     pb.set_style(
@@ -54,32 +51,54 @@ async fn main() -> Result<()> {
             .progress_chars("=>-"),
     );
 
-    for row in rows {
-        pb.set_message(format!("{}", row.website.as_deref().unwrap_or("(no website)")));
-        let unique = row.unique_id.clone();
-        let website = row.website.clone().unwrap_or_default();
-        let mut chosen: Option<String> = None;
+    // Process rows in parallel with bounded concurrency, collecting results with original order index
+    let http_clone = http.clone();
+    let cfg_clone = CrawlConfig::new(args.max_pages, args.max_depth);
 
-        if let Ok(start) = normalize_start_url(&website) {
-            match crawl_site(http.clone(), &start, &cfg).await {
-                Ok(result) => {
-                    let host = start.host_str().unwrap_or("");
-                    chosen = choose_best_email(result.emails.iter(), host);
+    let results: Vec<(usize, String, String)> = stream::iter(rows.into_iter().enumerate())
+        .map(|(idx, row)| {
+            let http = http_clone.clone();
+            let cfg = cfg_clone.clone();
+            let pb = pb.clone();
+            async move {
+                pb.set_message(format!("{}", row.website.as_deref().unwrap_or("(no website)")));
+                let unique = row.unique_id.clone();
+                let website = row.website.clone().unwrap_or_default();
+                let mut chosen: Option<String> = None;
+
+                if let Ok(start) = normalize_start_url(&website) {
+                    match crawl_site(http.clone(), &start, &cfg).await {
+                        Ok(result) => {
+                            let host = start.host_str().unwrap_or("");
+                            chosen = choose_best_email(result.emails.iter(), host);
+                        }
+                        Err(e) => {
+                            tracing::warn!("crawl error for {}: {}", website, e);
+                        }
+                    }
+                } else {
+                    tracing::warn!("Invalid website URL for {}: {}", unique, website);
                 }
-                Err(e) => {
-                    tracing::warn!("crawl error for {}: {}", website, e);
-                }
+
+                pb.inc(1);
+                (idx, unique, chosen.unwrap_or_default())
             }
-        } else {
-            tracing::warn!("Invalid website URL for {}: {}", unique, website);
-        }
-
-        wtr.write_record([unique, chosen.unwrap_or_default()]).ok();
-        pb.inc(1);
-    }
+        })
+        .buffer_unordered(args.row_concurrency)
+        .collect()
+        .await;
 
     pb.finish_with_message("done");
 
+    // Write CSV output preserving original order
+    let mut sorted = results;
+    sorted.sort_by_key(|(idx, _, _)| *idx);
+
+    let mut wtr = csv::Writer::from_path(&args.output)?;
+    wtr.write_record(["Unique_ID", "Email"]).ok();
+    for (_, unique, email) in sorted {
+        wtr.write_record([unique, email]).ok();
+    }
     wtr.flush().ok();
 
     tracing::info!("Done. Wrote {}", args.output.display());
