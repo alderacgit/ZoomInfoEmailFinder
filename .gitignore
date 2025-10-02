@@ -1,0 +1,7 @@
+target/
+.DS_Store
+.env
+.secrets/
+.cache/
+output/
+# Keep Cargo.lock committed for binaries; do not ignore it
