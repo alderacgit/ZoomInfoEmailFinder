@@ -30,7 +30,7 @@ pub struct Args {
     pub max_pages: usize,
 
     /// Max depth to crawl from the start URL
-    #[arg(long, default_value_t = 3)]
+    #[arg(long, default_value_t = 5)]
     pub max_depth: usize,
 
     /// Headless browser usage
