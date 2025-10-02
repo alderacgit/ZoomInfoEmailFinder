@@ -4,6 +4,7 @@ use std::fs;
 use std::sync::Arc;
 use tracing_subscriber::{fmt, EnvFilter};
 use url::Url;
+use indicatif::{ProgressBar, ProgressStyle};
 
 mod cli;
 mod crawler;
@@ -33,7 +34,8 @@ async fn main() -> Result<()> {
     // Fetch rows from public Google Sheets CSV export
     let sheet_url = args.sheet_url.clone().context("Sheet URL required")?;
     let rows = fetch_rows(&sheet_url).await?;
-    tracing::info!("Fetched {} rows from sheet", rows.len());
+    let total = rows.len();
+    tracing::info!("Fetched {} rows from sheet", total);
 
     // Prepare HTTP client with cache and concurrency
     let http = Arc::new(HttpClient::new(args.cache_dir.clone(), std::time::Duration::from_secs(args.cache_ttl_secs), args.concurrency)?);
@@ -44,7 +46,16 @@ async fn main() -> Result<()> {
     let mut wtr = csv::Writer::from_path(&args.output)?;
     wtr.write_record(["Unique_ID", "Email"]).ok();
 
+    // Progress bar for overall row processing
+    let pb = ProgressBar::new(total as u64);
+    pb.set_style(
+        ProgressStyle::with_template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {pos}/{len} | {msg}")
+            .unwrap()
+            .progress_chars("=>-"),
+    );
+
     for row in rows {
+        pb.set_message(format!("{}", row.website.as_deref().unwrap_or("(no website)")));
         let unique = row.unique_id.clone();
         let website = row.website.clone().unwrap_or_default();
         let mut chosen: Option<String> = None;
@@ -64,7 +75,10 @@ async fn main() -> Result<()> {
         }
 
         wtr.write_record([unique, chosen.unwrap_or_default()]).ok();
+        pb.inc(1);
     }
+
+    pb.finish_with_message("done");
 
     wtr.flush().ok();
 

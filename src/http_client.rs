@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use anyhow::Result;
 use reqwest::Client;
 use sha2::{Digest, Sha256};
 use std::path::{Path, PathBuf};
@@ -6,7 +6,7 @@ use std::sync::Arc;
 use tokio::fs;
 use tokio::io::AsyncWriteExt;
 use tokio::sync::Semaphore;
-use tokio::time::{Duration, Instant};
+use tokio::time::Duration;
 use url::Url;
 
 #[derive(Clone)]
