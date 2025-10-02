@@ -1,7 +1,6 @@
 use anyhow::{Context, Result};
 use clap::Parser;
 use std::fs;
-use std::path::PathBuf;
 use std::sync::Arc;
 use tracing_subscriber::{fmt, EnvFilter};
 use url::Url;
@@ -31,13 +30,9 @@ async fn main() -> Result<()> {
     // Prepare output directory
     if let Some(parent) = args.output.parent() { fs::create_dir_all(parent).ok(); }
 
-    // Fetch rows from Google Sheets
-    let client_secret = args
-        .client_secret
-        .clone()
-        .context("Client secret path required")?;
+    // Fetch rows from public Google Sheets CSV export
     let sheet_url = args.sheet_url.clone().context("Sheet URL required")?;
-    let rows = fetch_rows(&sheet_url, &client_secret).await?;
+    let rows = fetch_rows(&sheet_url).await?;
     tracing::info!("Fetched {} rows from sheet", rows.len());
 
     // Prepare HTTP client with cache and concurrency

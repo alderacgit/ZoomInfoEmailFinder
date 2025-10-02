@@ -20,9 +20,6 @@ pub struct Args {
     #[arg(long, default_value = "./output/results.csv")] 
     pub output: PathBuf,
 
-    /// Path to Google OAuth client secret JSON (Desktop client)
-    #[arg(long, env = "GOOGLE_CLIENT_SECRET_PATH")] 
-    pub client_secret: Option<PathBuf>,
 
     /// Max concurrent HTTP requests
     #[arg(long, default_value_t = 4)]
@@ -58,20 +55,11 @@ impl Args {
         if self.sheet_url.is_none() {
             if let Ok(url) = std::env::var("SHEET_URL") { self.sheet_url = Some(url); }
         }
-        if self.client_secret.is_none() {
-            if let Ok(path) = std::env::var("GOOGLE_CLIENT_SECRET_PATH") { self.client_secret = Some(PathBuf::from(path)); }
-        }
         if self.sheet_url.is_none() {
             let ans: String = dialoguer::Input::new()
                 .with_prompt("Enter Google Sheet URL")
                 .interact_text()?;
             self.sheet_url = Some(ans);
-        }
-        if self.client_secret.is_none() {
-            let ans: String = dialoguer::Input::new()
-                .with_prompt("Path to Google OAuth client_secret.json")
-                .interact_text()?;
-            self.client_secret = Some(PathBuf::from(ans));
         }
         Ok(self)
     }

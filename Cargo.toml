@@ -36,12 +36,6 @@ directories = "5.0"
 # Logging
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-# Google Sheets API + OAuth
-# Using google-sheets4 (from google-apis-rs) which re-exports oauth2 types
-google-sheets4 = "5"
-# Underlying HTTP for Google APIs
-hyper = { version = "0.14", features = ["http1", "http2", "client"] }
-hyper-rustls = { version = "0.24", features = ["http1", "http2"] }
 # Interactive prompts
 dialoguer = "0.11"
 # Optional headless browser (requires Chrome installed)
